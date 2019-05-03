@@ -32,15 +32,13 @@ class MyServer extends AbstractVerticle {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(MyServer.class);
     private static final int LISTEN_PORT = 8080;
-    private static final String URL = "http://zihadlo/hello.html";
 
     @Override
     public void start(Future<Void> fut) {
         WebClient vertxClient = WebClient.create(vertx);
-        URL jdkClient = JdkClientFactory.create(URL);
         Client jerseyClient = JerseyClientFactory.create();
 
-        vertx.createHttpServer().requestHandler(new MyHandler(vertxClient, jdkClient, jerseyClient)).listen(LISTEN_PORT,
+        vertx.createHttpServer().requestHandler(new MyHandler(vertxClient, jerseyClient)).listen(LISTEN_PORT,
                 result -> {
                     if (result.succeeded()) {
                         LOGGER.info("Server listening on port {}", LISTEN_PORT);
@@ -56,13 +54,13 @@ class MyHandler implements Handler<HttpServerRequest> {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(MyHandler.class);
 
+    private static final String URL = "http://zihadlo/hello.html";
+
     WebClient vertxClient;
-    URL jdkClient;
     Client jerseyClient;
 
-    public MyHandler(WebClient vertxClient, URL jdkClient, Client jerseyClient) {
+    public MyHandler(WebClient vertxClient, Client jerseyClient) {
         this.vertxClient = vertxClient;
-        this.jdkClient = jdkClient;
         this.jerseyClient = jerseyClient;
     }
 
@@ -72,21 +70,10 @@ class MyHandler implements Handler<HttpServerRequest> {
         long startTime = System.nanoTime();
 
         Buffer content = downloadUrlJersey(URL);
-        // Buffer content = downloadUrlJdk(URL);
         event.response().end(content);
 
         long endTime = System.nanoTime();
         LOGGER.info("Request processed in " + ((endTime - startTime) / 1_000) + " us");
-    }
-
-    public Buffer downloadUrlJdk(String url) {
-        Buffer content = Buffer.buffer();
-        try (InputStream is = jdkClient.openStream()) {
-            content = readInputStream(is);
-        } catch (IOException e) {
-            LOGGER.error("Failed to read from URL {}", url, e);
-        }
-        return content;
     }
 
     public Buffer downloadUrlJersey(String url) {
