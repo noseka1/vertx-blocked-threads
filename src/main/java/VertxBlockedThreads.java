@@ -30,7 +30,7 @@ class FibonacciServer extends AbstractVerticle {
 
 class FibonacciHandler implements Handler<HttpServerRequest> {
 
-	private static final Logger logger = LoggerFactory.getLogger(FibonacciHandler.class);
+	private static final Logger LOGGER = LoggerFactory.getLogger(FibonacciHandler.class);
 	private static final int n = 20;
 
 	@Override
@@ -39,7 +39,7 @@ class FibonacciHandler implements Handler<HttpServerRequest> {
 		long result = fibonacci(n);
 		event.response().end(Long.toString(result));
 		long endTime = System.nanoTime();
-		logger.info("Processed in " + ((endTime - startTime) / 1_000) + " us");
+		LOGGER.info("Processed in " + ((endTime - startTime) / 1_000) + " us");
 	}
 
 	long fibonacci(int n) {
