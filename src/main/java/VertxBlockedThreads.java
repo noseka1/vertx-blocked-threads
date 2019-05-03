@@ -5,10 +5,12 @@ import io.vertx.core.Vertx;
 import io.vertx.core.http.HttpServerRequest;
 import io.vertx.core.logging.Logger;
 import io.vertx.core.logging.LoggerFactory;
+import io.vertx.core.logging.SLF4JLogDelegateFactory;
 
 public class VertxBlockedThreads {
 
 	public static void main(String[] args) {
+	    System.setProperty("vertx.logger-delegate-factory-class-name", SLF4JLogDelegateFactory.class.getName());
 		Vertx vertx = Vertx.vertx();
 		vertx.deployVerticle(new FibonacciServer());
 	}
