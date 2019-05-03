@@ -17,57 +17,69 @@ import io.vertx.core.http.HttpServerRequest;
 import io.vertx.core.logging.Logger;
 import io.vertx.core.logging.LoggerFactory;
 import io.vertx.core.logging.SLF4JLogDelegateFactory;
+import io.vertx.ext.web.client.WebClient;
 
 public class VertxBlockedThreads {
 
     public static void main(String[] args) {
         System.setProperty("vertx.logger-delegate-factory-class-name", SLF4JLogDelegateFactory.class.getName());
         Vertx vertx = Vertx.vertx();
-        vertx.deployVerticle(new FibonacciServer());
+        vertx.deployVerticle(new MyServer());
     }
 }
 
-class FibonacciServer extends AbstractVerticle {
+class MyServer extends AbstractVerticle {
 
-    private static final Logger LOGGER = LoggerFactory.getLogger(FibonacciServer.class);
+    private static final Logger LOGGER = LoggerFactory.getLogger(MyServer.class);
     private static final int LISTEN_PORT = 8080;
+    private static final String URL = "http://zihadlo/hello.html";
 
     @Override
     public void start(Future<Void> fut) {
-        vertx.createHttpServer().requestHandler(new FibonacciHandler()).listen(LISTEN_PORT, result -> {
-            if (result.succeeded()) {
-                LOGGER.info("Server listening on port {}", LISTEN_PORT);
-                fut.complete();
-            } else {
-                fut.fail(result.cause());
-            }
-        });
+        WebClient vertxClient = WebClient.create(vertx);
+        URL jdkClient = JdkClientFactory.create(URL);
+        Client jerseyClient = JerseyClientFactory.create();
+
+        vertx.createHttpServer().requestHandler(new MyHandler(vertxClient, jdkClient, jerseyClient)).listen(LISTEN_PORT,
+                result -> {
+                    if (result.succeeded()) {
+                        LOGGER.info("Server listening on port {}", LISTEN_PORT);
+                        fut.complete();
+                    } else {
+                        fut.fail(result.cause());
+                    }
+                });
     }
 }
 
-class FibonacciHandler implements Handler<HttpServerRequest> {
+class MyHandler implements Handler<HttpServerRequest> {
 
-    private static final Logger LOGGER = LoggerFactory.getLogger(FibonacciHandler.class);
+    private static final Logger LOGGER = LoggerFactory.getLogger(MyHandler.class);
 
-    private static final String URL = "http://zihadlo/hello.html";
+    WebClient vertxClient;
+    URL jdkClient;
+    Client jerseyClient;
 
-    private Client jerseyClient = JerseyClientFactory.create();
-    private URL jdkClient = JdkClientFactory.create(URL);
+    public MyHandler(WebClient vertxClient, URL jdkClient, Client jerseyClient) {
+        this.vertxClient = vertxClient;
+        this.jdkClient = jdkClient;
+        this.jerseyClient = jerseyClient;
+    }
 
     @Override
     public void handle(HttpServerRequest event) {
 
         long startTime = System.nanoTime();
 
-        Buffer content = getUrlJersey(URL);
-        // Buffer content = getUrlJdk(URL);
+        Buffer content = downloadUrlJersey(URL);
+        // Buffer content = downloadUrlJdk(URL);
         event.response().end(content);
 
         long endTime = System.nanoTime();
         LOGGER.info("Request processed in " + ((endTime - startTime) / 1_000) + " us");
     }
 
-    public Buffer getUrlJdk(String url) {
+    public Buffer downloadUrlJdk(String url) {
         Buffer content = Buffer.buffer();
         try (InputStream is = jdkClient.openStream()) {
             content = readInputStream(is);
@@ -77,7 +89,7 @@ class FibonacciHandler implements Handler<HttpServerRequest> {
         return content;
     }
 
-    public Buffer getUrlJersey(String url) {
+    public Buffer downloadUrlJersey(String url) {
         Response response = jerseyClient.target(url).request().get();
         InputStream is = response.readEntity(InputStream.class);
         return readInputStream(is);
