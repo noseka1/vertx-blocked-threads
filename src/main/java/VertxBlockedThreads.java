@@ -18,10 +18,14 @@ public class VertxBlockedThreads {
 
 class FibonacciServer extends AbstractVerticle {
 
+	private static final Logger LOGGER = LoggerFactory.getLogger(FibonacciServer.class);
+	private static final int LISTEN_PORT = 8080;
+
 	@Override
 	public void start(Future<Void> fut) {
-		vertx.createHttpServer().requestHandler(new FibonacciHandler()).listen(8080, result -> {
+		vertx.createHttpServer().requestHandler(new FibonacciHandler()).listen(LISTEN_PORT, result -> {
 			if (result.succeeded()) {
+			    LOGGER.info("Server listening on port {}", LISTEN_PORT);
 				fut.complete();
 			} else {
 				fut.fail(result.cause());
