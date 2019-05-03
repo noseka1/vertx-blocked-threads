@@ -1,11 +1,7 @@
 import java.io.IOException;
 import java.io.InputStream;
-import java.net.MalformedURLException;
-import java.net.URL;
 
 import javax.ws.rs.client.Client;
-import javax.ws.rs.client.ClientBuilder;
-import javax.ws.rs.client.WebTarget;
 import javax.ws.rs.core.Response;
 
 import io.vertx.core.AbstractVerticle;
@@ -17,6 +13,7 @@ import io.vertx.core.http.HttpServerRequest;
 import io.vertx.core.logging.Logger;
 import io.vertx.core.logging.LoggerFactory;
 import io.vertx.core.logging.SLF4JLogDelegateFactory;
+import io.vertx.ext.web.client.HttpResponse;
 import io.vertx.ext.web.client.WebClient;
 
 public class VertxBlockedThreads {
@@ -54,7 +51,12 @@ class MyHandler implements Handler<HttpServerRequest> {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(MyHandler.class);
 
-    private static final String URL = "http://zihadlo/hello.html";
+    private static final String URL_PROTOCOL = "http://";
+    private static final String URL_HOST = "zihadlo";
+    private static final int URL_PORT = 80;
+    private static final String URL_PATH = "/hello.html";
+
+    private static final String URL = URL_PROTOCOL + ":" + URL_PORT + URL_HOST + URL_PATH;
 
     WebClient vertxClient;
     Client jerseyClient;
@@ -66,20 +68,30 @@ class MyHandler implements Handler<HttpServerRequest> {
 
     @Override
     public void handle(HttpServerRequest event) {
-
-        long startTime = System.nanoTime();
-
-        Buffer content = downloadUrlJersey(URL);
-        event.response().end(content);
-
-        long endTime = System.nanoTime();
-        LOGGER.info("Request processed in " + ((endTime - startTime) / 1_000) + " us");
+        // downloadUrlJersey(event);
+        downloadUrlVertx(event);
     }
 
-    public Buffer downloadUrlJersey(String url) {
-        Response response = jerseyClient.target(url).request().get();
-        InputStream is = response.readEntity(InputStream.class);
-        return readInputStream(is);
+    public void downloadUrlJersey(HttpServerRequest event) {
+        try {
+            Response response = jerseyClient.target(URL).request().get();
+            InputStream is = response.readEntity(InputStream.class);
+            Buffer content = readInputStream(is);
+            event.response().end(content);
+        } catch (Exception e) {
+            LOGGER.error("Failed to download {}", URL, e);
+        }
+    }
+
+    public void downloadUrlVertx(HttpServerRequest event) {
+        vertxClient.get(URL_PORT, URL_HOST, URL_PATH).send(ar -> {
+            if (ar.succeeded()) {
+                HttpResponse<Buffer> response = ar.result();
+                event.response().end(response.body());
+            } else {
+                LOGGER.error("Failed to download {}", URL, ar.cause());
+            }
+        });
     }
 
     private Buffer readInputStream(InputStream is) {
