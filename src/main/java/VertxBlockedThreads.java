@@ -32,6 +32,7 @@ class HttpServer extends AbstractVerticle {
         else {
             handler = new RequestHandler2(URL, vertx);
         }
+        LOGGER.info("Using {} request handler", handler.getClass());
 
         vertx.createHttpServer().requestHandler(handler).listen(LISTEN_PORT, result -> {
             if (result.succeeded()) {
