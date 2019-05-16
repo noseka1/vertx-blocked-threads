@@ -1,19 +1,11 @@
 <?xml version="1.0" encoding="UTF-8"?>
-
-<!-- No need to set system property "log4j2.contextSelector" to any value
-     when using <asyncLogger> or <asyncRoot>. -->
-
 <Configuration status="WARN">
   <Appenders>
-    <!-- Async Loggers will auto-flush in batches, so switch off immediateFlush. -->
-    <!-- <Console name="STDOUT" target="SYSTEM_OUT" immediateFlush="false"/> -->
-    <!-- <Console name="STDOUT" target="SYSTEM_OUT" immediateFlush="false"/> -->
-    <!-- <Console name="STDOUT" target="SYSTEM_OUT"/> -->
-    <File name="MyFile" fileName="app.log" append="false" immediateFlush="false"/>
+    <Console name="STDOUT" target="SYSTEM_OUT"/>
   </Appenders>
   <Loggers>
     <Root level="info">
-      <AppenderRef ref="MyFile"/>
+      <AppenderRef ref="STDOUT"/>
     </Root>
   </Loggers>
 </Configuration>
